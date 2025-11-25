@@ -1,115 +1,182 @@
-# SRE Final Project: FastAPI Calculator with Kubernetes, Observability & Alerts
+# SRE Final Project – FastAPI Calculator with Kubernetes Monitoring
 
-## Overview
-This project delivers a complete Site Reliability Engineering (SRE) stack built around a containerized **FastAPI-based calculator application** deployed on **Kubernetes (Minikube)**.  
-It includes **monitoring, dashboards, alerting, and Slack notifications**, following production-inspired SRE practices.
+## Project Overview
+This project implements a complete, production‑like **SRE monitoring pipeline** around a containerized **FastAPI Calculator** application deployed on **Kubernetes (Minikube)**.  
+The stack includes:
 
-This repository contains:
+- **FastAPI** application (containerized with Docker)
+- **Kubernetes Deployment + Service**
+- **Prometheus** (metrics collection)
+- **Grafana** (dashboards + alerts)
+- **Slack alert notifications**
+- **Ansible** (automation of deployment steps)
 
-- FastAPI application with interactive calculator UI  
-- Docker image packaging  
-- Kubernetes manifests (app, service, monitoring stack)  
-- Prometheus scraping configuration  
-- Grafana dashboards  
-- Alerting rules integrated with Slack  
-- Basic automation using Ansible for stack deployment  
+This project demonstrates practical observability and reliability engineering skills learned throughout the academy training.
 
 ---
 
-## Project Architecture
-
-### Components
-- **FastAPI Calculator App** – containerized and deployed via Kubernetes Deployment + Service  
-- **Prometheus** – scrapes metrics from FastAPI  
-- **Grafana** – dashboards + alert evaluation  
-- **Slack Alerts** – firing alerts sent directly to a Slack channel  
-- **Ansible** – automates manifest application to Minikube  
+## Architecture Diagram
+```
+User → FastAPI Service → Kubernetes → Prometheus → Grafana → Slack Alerts
+```
 
 ---
 
 ## 1. FastAPI Application
+A simple but interactive calculator with input fields and HTML UI.
 
-Provides:
-- Calculator UI  
-- FastAPI backend  
-- `/metrics` endpoint for Prometheus  
+### Files:
+- `app/main.py`
+- `app/requirements.txt`
+- `Dockerfile`
 
-Run locally:
-```
-uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
----
-
-## 2. Docker Image
-
-Build:
-```
+### Build & Push:
+```bash
 docker build -t alejoro21/sre-calculator:1.0 .
-```
-
-Push:
-```
 docker push alejoro21/sre-calculator:1.0
 ```
 
 ---
 
-## 3. Kubernetes Deployment
+## 2. Kubernetes Deployment
+The app is deployed inside Minikube using:
 
-Apply:
-```
-kubectl apply -f k8s/app.yaml
-kubectl apply -f k8s/prometheus.yaml
-kubectl apply -f k8s/grafana.yaml
+- `k8s/deployment.yaml`
+- `k8s/service.yaml`
+
+### Apply:
+```bash
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
 ```
 
-Open app:
-```
+### Access app:
+```bash
 minikube service fastapi-service -n monitoring --url
 ```
 
 ---
 
-## 4. Prometheus
+## 3. Prometheus Integration
+The Prometheus ConfigMap was updated to scrape FastAPI as a target.
 
-Scrapes FastAPI metrics through a scrape job defined in:
-
+### Key Fragment:
+```yaml
+scrape_configs:
+  - job_name: 'fastapi-calculator'
+    static_configs:
+      - targets: ['fastapi-service.monitoring.svc.cluster.local:80']
 ```
-k8s/prometheus.yaml
-```
 
----
-
-## 5. Grafana
-
-Dashboards reflect:
-- Latency  
-- Request count  
-- Errors  
-- Availability  
-
----
-
-## 6. Alerts (Slack)
-
-Prometheus metrics → Grafana alerting → Slack via webhook.
-
----
-
-## 7. Ansible Automation
-
-Run:
-```
-ansible-playbook -i ansible/inventory.ini ansible/deploy_stack.yaml
+### Commands:
+```bash
+kubectl apply -f prometheus/prometheus.yaml
+minikube service prometheus-service -n monitoring
 ```
 
 ---
 
-## Repository Structure
+## 4. Grafana Dashboards
+Grafana reads FastAPI metrics from Prometheus.
+
+- Dashboard built manually in UI
+- Includes:
+  - Request count
+  - Latency
+  - Error rate
+  - CPU/memory from cAdvisor
+
+Access:
+```bash
+minikube service grafana-service -n monitoring
 ```
-app/
-k8s/
-ansible/
-README.md
+
+---
+
+## 5. Alerting (Slack Notifications)
+A Slack Incoming Webhook was configured.
+
+### Alert Rule (Grafana):
+- Fires when FastAPI reports errors
+- Sends webhook messages like:
+
 ```
+🚨 FastAPI Calculator Error Rate High
+```
+
+---
+
+## 6. Automation with Ansible
+Ansible playbook `ansible/deploy.yaml` automates:
+
+- Applying Kubernetes manifests  
+- Ensuring Minikube is running  
+- Deploying monitoring stack
+
+### Run:
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/deploy.yaml
+```
+
+---
+
+## Project Structure
+```
+sre-final-project/
+│
+├── app/
+│   ├── main.py
+│   └── requirements.txt
+│
+├── k8s/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   └── prometheus.yaml
+│
+├── grafana/
+│   └── datasources.yaml
+│
+├── ansible/
+│   ├── inventory.ini
+│   └── deploy.yaml
+│
+└── README.md  ← this file
+```
+
+---
+
+## Future Improvements
+These items were part of optional academy topics and can be added later:
+
+- OpenTelemetry tracing → Jaeger  
+- cAdvisor dashboards with span metrics  
+- Loki logging pipeline  
+- Terraform IaC  
+- GitOps with ArgoCD  
+- Chaos engineering with Litmus  
+
+---
+
+## How to Run Everything (Summary)
+
+### Start Minikube:
+```bash
+minikube start --driver=docker
+```
+
+### Deploy everything:
+```bash
+ansible-playbook -i ansible/inventory.ini ansible/deploy.yaml
+```
+
+### Access:
+- FastAPI: `minikube service fastapi-service -n monitoring`
+- Prometheus: `minikube service prometheus-service -n monitoring`
+- Grafana: `minikube service grafana-service -n monitoring`
+
+---
+
+## Author
+**Luis Mejia (Alejoro21)**  
+SRE Academy Final Project
+
