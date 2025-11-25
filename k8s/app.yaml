@@ -1,0 +1,56 @@
+# Namespace
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+---
+# Deployment de la app
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-calculator
+  namespace: monitoring
+  labels:
+    app: fastapi-calculator
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: fastapi-calculator
+  template:
+    metadata:
+      labels:
+        app: fastapi-calculator
+    spec:
+      containers:
+        - name: fastapi
+          image: alejoro21/sre-calculator:1.1
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+# Service tipo NodePort para exponer API fuera del cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi-service
+  namespace: monitoring
+spec:
+  type: NodePort
+  selector:
+    app: fastapi-calculator
+  ports:
+    - port: 8000        # puerto dentro del cluster
+      targetPort: 8000  # puerto del contenedor
+      nodePort: 30080   # puerto del nodo (Minikube)

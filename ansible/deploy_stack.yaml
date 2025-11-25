@@ -1,0 +1,40 @@
+- name: Deploy full SRE stack to local Kubernetes (minikube)
+  hosts: local
+  gather_facts: false
+
+  vars:
+    project_root: "{{ playbook_dir }}/.."
+
+  tasks:
+    - name: Start minikube (idempotente, si ya está corriendo no pasa nada)
+      ansible.builtin.command:
+        cmd: minikube start --driver=docker
+      register: minikube_start
+      changed_when: "'Done!' in minikube_start.stdout or 'Starting' in minikube_start.stdout"
+
+    - name: Apply Prometheus manifests
+      ansible.builtin.command:
+        cmd: kubectl apply -f k8s/prometheus.yaml
+      args:
+        chdir: "{{ project_root }}"
+
+    - name: Apply Grafana manifests
+      ansible.builtin.command:
+        cmd: kubectl apply -f k8s/grafana.yaml
+      args:
+        chdir: "{{ project_root }}"
+
+    - name: Apply FastAPI calculator app (Deployment + Service)
+      ansible.builtin.command:
+        cmd: kubectl apply -f k8s/app.yaml
+      args:
+        chdir: "{{ project_root }}"
+
+    - name: Show pods in monitoring namespace
+      ansible.builtin.command:
+        cmd: kubectl get pods -n monitoring
+      register: pods_output
+
+    - name: Print pods
+      ansible.builtin.debug:
+        var: pods_output.stdout
