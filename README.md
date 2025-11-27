@@ -101,7 +101,7 @@ A Slack Incoming Webhook was configured.
 - Sends webhook messages like:
 
 ```
-🚨 FastAPI Calculator Error Rate High
+FastAPI Calculator Error Rate High
 ```
 
 ---
