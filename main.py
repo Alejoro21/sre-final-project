@@ -16,12 +16,10 @@ calc_requests_total = Counter(
 
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
-    # Calculator's front page (style)
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={"result": None}
-    )
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "result": None
+    })
 
 @app.post("/calculate", response_class=HTMLResponse)
 def calculate(
@@ -43,23 +41,16 @@ def calculate(
     else:
         raise HTTPException(status_code=400, detail="Invalid operation")
 
-    # Increase metric by operation
     calc_requests_total.labels(operation=operation).inc()
 
-    return templates.TemplateResponse(
-        request=request,
-        name="index.html",
-        context={
-            "result": result,
-            "a": a, 
-            "b": b,
-            "operation": operation
-        }
-    )
-        {"request": request, "result": result, "a": a, "b": b, "operation": operation}
-    )
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "result": result,
+        "a": a,
+        "b": b,
+        "operation": operation
+    })
 
 @app.get("/metrics")
 def metrics():
-    # Endpoint for Prometheus
     return Response(generate_latest(), media_type="text/plain")
