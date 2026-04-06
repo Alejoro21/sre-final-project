@@ -1,35 +1,33 @@
-from fastapi import FastAPI, HTTPException, Form, Request
-from fastapi.responses import Response, HTMLResponse
-from fastapi.templating import Jinja2Templates
-from prometheus_client import Counter, generate_latest
+from fastapi import FastAPI, Form
+from fastapi.responses import HTMLResponse
 
-app = FastAPI(title="SRE Calculator API")
-
-import os
-
-templates = Jinja2Templates(directory=os.path.join(os.getcwd(), "templates"))
-
-# Prometheus Metrics
-calc_requests_total = Counter(
-    "calc_requests_total",
-    "Total calculator requests by operation",
-    ["operation"]
-)
+app = FastAPI()
 
 @app.get("/", response_class=HTMLResponse)
-def home(request: Request):
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "result": None
-    })
+def home():
+    return """
+    <html>
+        <body>
+            <h1>Calculator</h1>
+            <form action="/calculate" method="post">
+                <input type="number" name="a" step="any" required>
+                <input type="number" name="b" step="any" required>
+
+                <select name="operation">
+                    <option value="add">+</option>
+                    <option value="subtract">-</option>
+                    <option value="multiply">*</option>
+                    <option value="divide">/</option>
+                </select>
+
+                <button type="submit">Calculate</button>
+            </form>
+        </body>
+    </html>
+    """
 
 @app.post("/calculate", response_class=HTMLResponse)
-def calculate(
-    request: Request,
-    a: float = Form(...),
-    b: float = Form(...),
-    operation: str = Form(...)
-):
+def calculate(a: float = Form(...), b: float = Form(...), operation: str = Form(...)):
     if operation == "add":
         result = a + b
     elif operation == "subtract":
@@ -37,22 +35,15 @@ def calculate(
     elif operation == "multiply":
         result = a * b
     elif operation == "divide":
-        if b == 0:
-            raise HTTPException(status_code=400, detail="Division by zero")
-        result = a / b
+        result = a / b if b != 0 else "Error"
     else:
-        raise HTTPException(status_code=400, detail="Invalid operation")
+        result = "Invalid"
 
-    calc_requests_total.labels(operation=operation).inc()
-
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "result": result,
-        "a": a,
-        "b": b,
-        "operation": operation
-    })
-
-@app.get("/metrics")
-def metrics():
-    return Response(generate_latest(), media_type="text/plain")
+    return f"""
+    <html>
+        <body>
+            <h1>Result: {result}</h1>
+            <a href="/">Back</a>
+        </body>
+    </html>
+    """
