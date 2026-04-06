@@ -5,7 +5,9 @@ from prometheus_client import Counter, generate_latest
 
 app = FastAPI(title="SRE Calculator API")
 
-templates = Jinja2Templates(directory="templates")
+import os
+
+templates = Jinja2Templates(directory=os.path.join(os.getcwd(), "templates"))
 
 # Prometheus Metrics
 calc_requests_total = Counter(
