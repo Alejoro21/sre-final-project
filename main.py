@@ -17,7 +17,11 @@ calc_requests_total = Counter(
 @app.get("/", response_class=HTMLResponse)
 def home(request: Request):
     # Calculator's front page (style)
-    return templates.TemplateResponse("index.html", {"request": request, "result": None})
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"result": None}
+    )
 
 @app.post("/calculate", response_class=HTMLResponse)
 def calculate(
@@ -43,7 +47,15 @@ def calculate(
     calc_requests_total.labels(operation=operation).inc()
 
     return templates.TemplateResponse(
-        "index.html",
+        request=request,
+        name="index.html",
+        context={
+            "result": result,
+            "a": a, 
+            "b": b,
+            "operation": operation
+        }
+    )
         {"request": request, "result": result, "a": a, "b": b, "operation": operation}
     )
 
